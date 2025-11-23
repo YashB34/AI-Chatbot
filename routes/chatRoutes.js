@@ -1,24 +1,24 @@
-
 const express = require("express");
 const { sendMessage, getChatHistory } = require("../controllers/chatController");
-// const authMiddleware = require("../middleware/authMiddleware");
+const authMiddleware = require("../middleware/authMiddleware");
+const Chat = require("../models/Chat");
 
 const router = express.Router();
 
-// Protected routes
-router.post("/send",  sendMessage);
-router.get("/history",  getChatHistory);
+router.post("/send", authMiddleware, sendMessage);
+router.get("/history", authMiddleware, getChatHistory);
 
-router.delete("/clear", async (req, res) => {
+// CLEAR CHAT (fix)
+router.delete("/clear", authMiddleware, async (req, res) => {
   try {
     const userId = req.userId;
     await Chat.findOneAndDelete({ user: userId });
+
     return res.json({ message: "Chat cleared" });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
+    console.error("Clear Chat Error:", err);
+    res.status(500).json({ message: "Server Error" });
   }
 });
-
 
 module.exports = router;

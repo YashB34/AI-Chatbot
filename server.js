@@ -11,6 +11,8 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use("/api/chat", require("./routes/chatRoutes"));
+
 
 // DB connect
 connectDB();
