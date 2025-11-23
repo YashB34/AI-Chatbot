@@ -9,4 +9,16 @@ const router = express.Router();
 router.post("/send",  sendMessage);
 router.get("/history",  getChatHistory);
 
+router.delete("/clear", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.userId;
+    await Chat.findOneAndDelete({ user: userId });
+    return res.json({ message: "Chat cleared" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
 module.exports = router;
