@@ -9,7 +9,7 @@ const router = express.Router();
 router.post("/send",  sendMessage);
 router.get("/history",  getChatHistory);
 
-router.delete("/clear", authMiddleware, async (req, res) => {
+router.delete("/clear", async (req, res) => {
   try {
     const userId = req.userId;
     await Chat.findOneAndDelete({ user: userId });
