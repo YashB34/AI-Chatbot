@@ -5,25 +5,22 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash"});
 
-
 exports.sendMessage = async (req, res) => {
   try {
     const { message } = req.body;
-    const userId = req.userId;
+    const userId = "public-user";  
 
     if (!message) {
       return res.status(400).json({ message: "Message is required" });
     }
 
-  //  AI Reply 
- const result = await model.generateContent({
-  contents: [{ role: "user", parts: [{ text: message }] }]
-});
+    // AI Reply
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: message }] }]
+    });
 
-const aiReply = result.response.text();
+    const aiReply = result.response.text();
 
-
-    // chat or create new
     let chat = await Chat.findOne({ user: userId });
     if (!chat) {
       chat = await Chat.create({
@@ -48,11 +45,9 @@ const aiReply = result.response.text();
   }
 };
 
-
 exports.getChatHistory = async (req, res) => {
   try {
-    const userId = req.userId;
-
+    const userId = "public-user"; 
     const chat = await Chat.findOne({ user: userId });
 
     if (!chat) {
