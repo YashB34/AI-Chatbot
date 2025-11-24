@@ -2,16 +2,14 @@ const express = require("express");
 const router = express.Router();
 const authMiddleware = require("../middleware/authMiddleware");
 const Chat = require("../models/Chat");
+const { sendAIResponse } = require("../controllers/aiController");
 
-// Get History
+// Get chat history
 router.get("/history", authMiddleware, async (req, res) => {
   try {
-    let chat = await Chat.findOne({ userId: req.user.id });
-
-    if (!chat) return res.json({ messages: [] });
-
-    res.json({ messages: chat.messages });
-  } catch (err) {
+    const chat = await Chat.findOne({ userId: req.user });
+    res.json(chat || { messages: [] });
+  } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -19,30 +17,35 @@ router.get("/history", authMiddleware, async (req, res) => {
 // Send message
 router.post("/send", authMiddleware, async (req, res) => {
   try {
-    let chat = await Chat.findOne({ userId: req.user.id });
-    if (!chat) chat = await Chat.create({ userId: req.user.id, messages: [] });
+    const userMessage = req.body.message;
 
-    chat.messages.push({ role: "user", content: req.body.message });
-    chat.messages.push({ role: "assistant", content: "AI Reply..." });
+    const reply = await sendAIResponse(userMessage);
 
-    await chat.save();
-    res.json({ messages: chat.messages });
-  } catch (err) {
-    res.status(500).json({ message: "Server error" });
+    const chat = await Chat.findOneAndUpdate(
+      { userId: req.user },
+      {
+        $push: {
+          messages: [
+            { role: "user", content: userMessage },
+            { role: "assistant", content: reply },
+          ],
+        },
+      },
+      { upsert: true, new: true }
+    );
+
+    res.json(chat);
+  } catch (error) {
+    res.status(500).json({ message: "AI Error", error: error.message });
   }
 });
 
-// CLEAR CHAT HISTORY
+// Clear history
 router.delete("/clear", authMiddleware, async (req, res) => {
   try {
-    let chat = await Chat.findOne({ userId: req.user.id });
-    if (!chat) return res.json({ message: "Already empty" });
-
-    chat.messages = [];
-    await chat.save();
-
+    await Chat.findOneAndDelete({ userId: req.user });
     res.json({ message: "Chat cleared" });
-  } catch (err) {
+  } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
 });
