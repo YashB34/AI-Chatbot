@@ -1,23 +1,49 @@
 const express = require("express");
-const { sendMessage, getChatHistory } = require("../controllers/chatController");
+const router = express.Router();
 const authMiddleware = require("../middleware/authMiddleware");
 const Chat = require("../models/Chat");
 
-const router = express.Router();
+// Get History
+router.get("/history", authMiddleware, async (req, res) => {
+  try {
+    let chat = await Chat.findOne({ userId: req.user.id });
 
-router.post("/send", authMiddleware, sendMessage);
-router.get("/history", authMiddleware, getChatHistory);
+    if (!chat) return res.json({ messages: [] });
 
-// CLEAR CHAT (fix)
+    res.json({ messages: chat.messages });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Send message
+router.post("/send", authMiddleware, async (req, res) => {
+  try {
+    let chat = await Chat.findOne({ userId: req.user.id });
+    if (!chat) chat = await Chat.create({ userId: req.user.id, messages: [] });
+
+    chat.messages.push({ role: "user", content: req.body.message });
+    chat.messages.push({ role: "assistant", content: "AI Reply..." });
+
+    await chat.save();
+    res.json({ messages: chat.messages });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// CLEAR CHAT HISTORY
 router.delete("/clear", authMiddleware, async (req, res) => {
   try {
-    const userId = req.userId;
-    await Chat.findOneAndDelete({ user: userId });
+    let chat = await Chat.findOne({ userId: req.user.id });
+    if (!chat) return res.json({ message: "Already empty" });
 
-    return res.json({ message: "Chat cleared" });
+    chat.messages = [];
+    await chat.save();
+
+    res.json({ message: "Chat cleared" });
   } catch (err) {
-    console.error("Clear Chat Error:", err);
-    res.status(500).json({ message: "Server Error" });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
