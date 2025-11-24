@@ -1,49 +1,33 @@
 const express = require("express");
 const router = express.Router();
-const authMiddleware = require("../middleware/authMiddleware");
-const Chat = require("../models/Chat");
-const { sendAIResponse } = require("../controllers/aiController");
+const { sendMessage, getChatHistory } = require("../controllers/chatController");
+
+// NO AUTH → Public mode
+// If you want login-system then add authMiddleware again
 
 // Get chat history
-router.get("/history", authMiddleware, async (req, res) => {
+router.get("/history", async (req, res) => {
   try {
-    const chat = await Chat.findOne({ userId: req.user });
-    res.json(chat || { messages: [] });
+    await getChatHistory(req, res);
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
 });
 
 // Send message
-router.post("/send", authMiddleware, async (req, res) => {
+router.post("/send", async (req, res) => {
   try {
-    const userMessage = req.body.message;
-
-    const reply = await sendAIResponse(userMessage);
-
-    const chat = await Chat.findOneAndUpdate(
-      { userId: req.user },
-      {
-        $push: {
-          messages: [
-            { role: "user", content: userMessage },
-            { role: "assistant", content: reply },
-          ],
-        },
-      },
-      { upsert: true, new: true }
-    );
-
-    res.json(chat);
+    await sendMessage(req, res);
   } catch (error) {
     res.status(500).json({ message: "AI Error", error: error.message });
   }
 });
 
-// Clear history
-router.delete("/clear", authMiddleware, async (req, res) => {
+// Clear chat (for new chat)
+router.delete("/clear", async (req, res) => {
   try {
-    await Chat.findOneAndDelete({ userId: req.user });
+    const Chat = require("../models/Chat");
+    await Chat.findOneAndDelete({ user: "public-user" });
     res.json({ message: "Chat cleared" });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
