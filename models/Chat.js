@@ -2,14 +2,8 @@ const mongoose = require("mongoose");
 
 const messageSchema = new mongoose.Schema(
   {
-    role: {
-      type: String, 
-      required: true,
-    },
-    content: {
-      type: String,
-      required: true,
-    },
+    role: { type: String, required: true },
+    content: { type: String, required: true },
   },
   { timestamps: true }
 );
@@ -17,7 +11,7 @@ const messageSchema = new mongoose.Schema(
 const chatSchema = new mongoose.Schema(
   {
     user: {
-      type: String,     
+      type: String,   // PUBLIC STRING ID
       required: true,
     },
     messages: [messageSchema],
